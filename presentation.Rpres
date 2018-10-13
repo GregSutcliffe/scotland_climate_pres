@@ -1,0 +1,83 @@
+Scotland Climate Explorer
+========================================================
+author: Greg Sutcliffe
+date: 13th October 2018
+autosize: true
+
+Concept
+========================================================
+
+This app is intended to allow exploration of Scotland's
+climate.
+
+Currently, it provides insights into the temperature and
+rainfall in the vicinity of Crieff, Scotland, since 1960.
+
+The app allows the user to select a year, and displays
+temperature & rainfall data per day for that years, as
+well as highlighting the selected year on a graph of the
+mean values for all years.
+
+This enables the user to see the characteristics for the
+selected year, as well as how the selected year compares
+to the years around it, and the predicted values for the
+selected year.
+
+Sample Daily Graph
+========================================================
+
+Here is the mean temperate per day for 1960
+
+```{r mean_1960, echo=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(plotly)
+
+temp <- read.csv('ukcp09_gridded-land-obs-daily_timeseries_mean-temperature_250000E_700000N_19600101-20161231.csv', header = F)
+temp <- temp %>%
+  select(V1,V79) %>%
+  filter(V1 != 'easting' & V1 != 'northing') %>%
+  mutate(V1 = ymd(V1)) %>%
+  rename(date = V1,mean_temp_celsius = V79) %>%
+  mutate(year = as.factor(year(date)))
+
+x <- filter(temp,year == 1960)
+ggplot(x,aes(x=date,y=mean_temp_celsius,colour=year)) +
+  geom_point() +
+  geom_smooth(se=F,colour='blue') +
+  ylab('Mean Temperature (Celsius)') +
+  xlab('Date') +
+  theme(legend.position = 'none')
+```
+
+Sample All-Years Graph
+========================================================
+
+Here is a sample graph of all years, highlighting 1960 in red
+
+```{r, echo=FALSE}
+summary_temp = temp %>%
+  group_by(year) %>%
+  summarise(mean = mean(mean_temp_celsius)) %>%
+  mutate(year2 = as.Date(year,tryFormats=c('%Y')))
+
+x = filter(summary_temp, year == 1960)
+ggplot(summary_temp,aes(x=year2,y=mean,colour=I('black'),label=year)) +
+  geom_point() +
+  geom_point(data = x, colour=I('red')) +
+  geom_smooth(se=F,method='lm') +
+  ylab('Mean Temperature (Celsius)') +
+  xlab('Year')
+```
+
+Potential Expansions
+====================
+
+It's natural to want to compare one year to the year before,
+and the after. It would be good to add comparisons to the
+surrounding years in some way - possibly using a 3-pane format,
+or maybe a ridgeplot.
+
+More variables would also be interesting to explore - hours of
+sunlight, cloud cover, and wind speed could all be added.
